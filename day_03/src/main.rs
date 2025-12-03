@@ -4,33 +4,42 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 
-fn highest_joltage(line: String) -> u8 {
-    let mut joltage: (u8, u8) = (0, 0);
+fn highest_joltage(line: String, cells: usize) -> u64 {
+    let mut joltage: Vec<u8> = vec![0;cells];
     let batteries = Vec::from_iter(line.chars());
-    for c in &batteries[..batteries.len() - 1] {
-        let val = c.to_digit(10).unwrap() as u8;
-        if val > joltage.0 {
-            joltage.0 = val;
-            joltage.1 = 0;
-        } else if val > joltage.1 {
-            joltage.1 = val;
-        }
-    }
-    let last = batteries.last().unwrap().to_digit(10).unwrap() as u8;
-    if last > joltage.1 {
-        joltage.1 = last;
+    let length = batteries.len();
+    if cells > length {
+        panic!("More cells requested than available");
     }
 
-    joltage.0 * 10 + joltage.1
+    for i in 0..length {
+        let available = (length as i8 - cells as i8 - i as i8).min(0).abs() as usize;
+        let val = batteries[i].to_digit(10).unwrap() as u8;
+
+        for j in available..cells {
+            if val > joltage[j] {
+                joltage[j] = val;
+                if joltage.get(j + 1).is_some() {
+                    joltage[j + 1] = 0;
+                }
+                break;
+            }
+        }
+    }
+    joltage.iter().enumerate()
+        .map(|(idx, digit)| {
+            10_u64.pow((cells - idx - 1) as u32) * *digit as u64
+        })
+        .sum()
 }
 
 fn main() {
-    let mut output: u32 = 0;
+    let mut output: u64 = 0;
 
     let file = File::open("input.txt").unwrap();
     for line in BufReader::new(file).lines() {
         let batteries = line.unwrap();
-        output += highest_joltage(batteries) as u32;
+        output += highest_joltage(batteries, 12);
     }
     println!("Total output joltage: {}", output);
 }
