@@ -3,41 +3,39 @@
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::ops::Add;
 
 
-const CAPACITY: usize = 2;
 const MAX_ADJACENCY: u8 = 4;
 
-fn count_accessible_rolls(rolls: Vec<i8>, num_adjacent: u8) -> u64 {
-    rolls.iter().fold(0, |acc, e| acc + (*e > -1 && *e < num_adjacent as i8) as u64)
+fn remove_accessible_rolls(lines: &mut VecDeque<Vec<i8>>, num_adjacent: u8) -> u64 {
+    let mut total_removed: u64 = 0;
+    for row in 0..lines.len() {
+        for col in 0..lines[row].len() {
+            if lines[row][col] > -1 && lines[row][col] < num_adjacent as i8 {
+                lines[row][col] = -1;
+                total_removed += 1;
+            }
+        }
+    }
+
+    total_removed
 }
 
 fn check_adjacency(lines: &mut VecDeque<Vec<i8>>) {
-    let row = lines.len() - 1;
-
-    for col in 0..lines[row].len() {
-        if lines[row][col] < 0 {
-            continue;
-        }
-        if lines[row].get(col.wrapping_sub(1)).is_some_and(|e| *e >= 0) {
-            lines[row][col - 1] += 1;
-            lines[row][col] += 1;
-        }
-
-        if lines.get(row.wrapping_sub(1)).is_none() {
-            continue;
-        }
-        if lines[row - 1].get(col.wrapping_sub(1)).is_some_and(|e| *e >= 0) {
-            lines[row - 1][col - 1] += 1;
-            lines[row][col] += 1;
-        }
-        if lines[row - 1].get(col).is_some_and(|e| *e >= 0) {
-            lines[row - 1][col] += 1;
-            lines[row][col] += 1;
-        }
-        if lines[row - 1].get(col + 1).is_some_and(|e| *e >= 0) {
-            lines[row - 1][col + 1] += 1;
-            lines[row][col] += 1;
+    for row in 0..lines.len() {
+        for col in 0..lines[row].len() {
+            if lines[row][col] < 0 {
+                continue;
+            }
+            lines[row][col] = 0;
+            for r in row.checked_sub(1).unwrap_or(0)..row.add(2).min(lines.len()) {
+                for c in col.checked_sub(1).unwrap_or(0)..col.add(2).min(lines[row].len()) {
+                    if lines[r][c] >= 0 && !(r == row && c == col) {
+                        lines[row][col] += 1;
+                    }
+                }
+            }
         }
     }
 }
@@ -53,14 +51,15 @@ fn main() {
             .map(|chr| if chr == '@' { 0 } else { -1 })
             .collect()
         );
-        if lines.len() > CAPACITY {
-            rolls += count_accessible_rolls(lines.pop_front().unwrap(), MAX_ADJACENCY);
-        }
-        check_adjacency(&mut lines);
     }
 
-    for line in lines {
-        rolls += count_accessible_rolls(line, MAX_ADJACENCY);
+    loop {
+        check_adjacency(&mut lines);
+        let removed = remove_accessible_rolls(&mut lines, MAX_ADJACENCY);
+        rolls += removed;
+        if removed == 0 {
+            break;
+        }
     }
 
     println!("Accessible paper rolls: {}", rolls);
