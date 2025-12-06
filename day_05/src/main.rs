@@ -68,13 +68,7 @@ impl RangeCollection {
     }
 
     fn is_in_range(&self, num: u64) -> bool {
-        self.coll.iter().any(|range| {
-            let res = range.in_range(num);
-            if res {
-                println!("{} found in {} - {}", num, range.from, range.to);
-            }
-            res
-        })
+        self.coll.iter().any(|range| range.in_range(num))
     }
 
     fn get_range_count(&self) -> u64 {
@@ -100,10 +94,6 @@ fn main() {
         } else {
             ranges.insert(Range::from_string(ln));
         }
-    }
-    println!("----");
-    for i in &ranges.coll {
-        println!("{} - {}", i.from, i.to);
     }
    
     println!("Fresh ingredients: {}", fresh_count);
