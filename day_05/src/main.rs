@@ -28,6 +28,7 @@ impl Range {
     fn merge_range_before(&mut self, range_left: &Range) -> Result<(), String> {
         if range_left.to + 1 >= self.from {
             self.from = self.from.min(range_left.from);
+            self.to = self.to.max(range_left.to);
             return Ok(());
         }
         Err("Could not merge ranges as there are gaps between them".to_string())
@@ -36,6 +37,7 @@ impl Range {
     fn merge_range_after(&mut self, range_right: &Range) -> Result<(), String> {
         if range_right.from - 1 <= self.to {
             self.to = self.to.max(range_right.to);
+            self.from = self.from.min(range_right.from);
             return Ok(());
         }
         Err("Could not merge ranges as there are gaps between them".to_string())
@@ -66,7 +68,13 @@ impl RangeCollection {
     }
 
     fn is_in_range(&self, num: u64) -> bool {
-        self.coll.iter().any(|range| range.in_range(num))
+        self.coll.iter().any(|range| {
+            let res = range.in_range(num);
+            if res {
+                println!("{} found in {} - {}", num, range.from, range.to);
+            }
+            res
+        })
     }
 
     fn get_range_count(&self) -> u64 {
